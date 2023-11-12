@@ -1,3 +1,4 @@
+using System.Net;
 using API.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,12 @@ builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("SQLServerDefaultConnection"));
 });
-
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.RedirectStatusCode = (int)HttpStatusCode.TemporaryRedirect;
+    options.HttpsPort = 5001;
+});
+builder.Services.AddCors();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -23,6 +29,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors(policy => {
+    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200");
+});
+
+
 app.UseAuthorization();
 
 app.EnsureMigration();

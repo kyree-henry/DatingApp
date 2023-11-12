@@ -10,6 +10,9 @@
 *.userosscache
 *.sln.docstates
 
+# Local Host SSL Certificate
+ssl
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
