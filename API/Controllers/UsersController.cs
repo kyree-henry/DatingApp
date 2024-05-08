@@ -4,6 +4,7 @@ using DatingApp.API.Entities;
 using DatingApp.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace DatingApp.API.Controllers
 {
@@ -38,5 +39,18 @@ namespace DatingApp.API.Controllers
             return await _userRepository.GetMemberAsync(userName);
         }
 
+        [HttpPut]
+        public async Task<ActionResult> UpdateUser([FromBody] MemberUpdateDto data)
+        {
+            string userName = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            AppUser user = await _userRepository.GetByUserNameAsync(userName);
+
+            _mapper.Map(data, user);
+
+            _userRepository.Update(user);
+            if (await _userRepository.SaveAllAsync()) return NoContent();
+
+            return BadRequest("Failed to update user!");
+        }
     }
 } 
