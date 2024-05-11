@@ -20,10 +20,10 @@ namespace DatingApp.API.Services
         {
             try
             {
-                List<Claim> claims = new()
-                {
-                    new Claim(JwtRegisteredClaimNames.Name, user.UserName)
-                };
+                List<Claim> claims =
+                [
+                    new Claim(ClaimTypes.NameIdentifier, user.UserName),
+                ];
 
                 SigningCredentials credentials = new(_key, SecurityAlgorithms.HmacSha512Signature);
                 SecurityTokenDescriptor tokenDescriptor = new()
