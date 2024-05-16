@@ -38,6 +38,7 @@ namespace DatingApp.API.Controllers
             {
                 Token = _tokenService.CreateToken(user),
                 UserName = model.UserName,
+                PhotoUrl = user.Photos?.FirstOrDefault(a => a.IsMain)?.URL
             });
         }
 
@@ -46,7 +47,7 @@ namespace DatingApp.API.Controllers
         {
             try
             {
-                AppUser? user = await _context.Users.FirstOrDefaultAsync(a => a.UserName == model.UserName);
+                AppUser? user = await _context.Users.Include(a => a.Photos).FirstOrDefaultAsync(a => a.UserName == model.UserName);
 
                 if (user is null) return Unauthorized("Invalid login attempt!");
 
@@ -64,6 +65,7 @@ namespace DatingApp.API.Controllers
                 {
                     Token = _tokenService.CreateToken(user),
                     UserName = model.UserName,
+                    PhotoUrl = user.Photos?.FirstOrDefault(a => a.IsMain)?.URL
                 });
 
             }

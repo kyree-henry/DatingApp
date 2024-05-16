@@ -79,7 +79,7 @@ namespace DatingApp.API.Controllers
             return BadRequest("Problem adding photo");
         }
 
-        [HttpPut("set-photo-main")]
+        [HttpPut("set-photo-main/{photoId:int}")]
         public async Task<ActionResult> SetMainPhoto(int photoId)
         {
             AppUser user = await _userRepository.GetByUserNameAsync(User.GetUserName());
