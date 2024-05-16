@@ -14,8 +14,8 @@ namespace DatingApp.API.Services
             Account acc = new()
             {
                 ApiKey = config.Value.APIKey,
-                Cloud = config.Value.ClouldName,
-                ApiSecret = config.Value.ClouldName,
+                Cloud = config.Value.CloudName,
+                ApiSecret = config.Value.APISecret,
             };
             _cloudinary = new Cloudinary(acc);
         }

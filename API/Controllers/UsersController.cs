@@ -1,10 +1,11 @@
 using AutoMapper;
+using CloudinaryDotNet.Actions;
+using DatingApp.API.Data.Core.Extensions;
 using DatingApp.API.DTOs;
 using DatingApp.API.Entities;
 using DatingApp.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace DatingApp.API.Controllers
 {
@@ -12,11 +13,13 @@ namespace DatingApp.API.Controllers
     public class UsersController : BaseApiController
     {
         private readonly IUserRepository _userRepository;
+        private readonly IPhotoService _photoService;
         private readonly IMapper _mapper;
-        public UsersController(IUserRepository userRepository, IMapper mapper)
+        public UsersController(IUserRepository userRepository, IMapper mapper, IPhotoService photoService)
         {
             _userRepository = userRepository;
             _mapper = mapper;
+            _photoService = photoService;
         }
 
         [HttpGet]
@@ -26,7 +29,7 @@ namespace DatingApp.API.Controllers
             return Ok(usersToReturn);
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = "GetUser")]
         public async Task<ActionResult<MemberDto>> GetUser(int id)
         {
             AppUser? user = await _userRepository.GetByIdAsync(id);
@@ -42,8 +45,7 @@ namespace DatingApp.API.Controllers
         [HttpPut]
         public async Task<ActionResult> UpdateUser([FromBody] MemberUpdateDto data)
         {
-            string userName = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            AppUser user = await _userRepository.GetByUserNameAsync(userName);
+            AppUser user = await _userRepository.GetByUserNameAsync(User.GetUserName());
 
             _mapper.Map(data, user);
 
@@ -52,5 +54,48 @@ namespace DatingApp.API.Controllers
 
             return BadRequest("Failed to update user!");
         }
+
+        [HttpPost("add-photo")]
+        public async Task<ActionResult<PhotoDto>> AddPhoto(IFormFile file)
+        {
+            AppUser user = await _userRepository.GetByUserNameAsync(User.GetUserName());
+            ImageUploadResult? result = await _photoService.AddPhotoAsync(file);
+            if (result.Error is not null) return BadRequest(result.Error.Message);
+
+            Photo photo = new()
+            {
+                PublicId = result!.PublicId,
+                URL = result.SecureUrl!.AbsoluteUri
+            };
+
+            if (user.Photos?.Count == 0) photo.IsMain = true;
+
+            user.Photos!.Add(photo);
+            if (await _userRepository.SaveAllAsync())
+            {
+                return CreatedAtRoute("GetUser", new { userName = user.UserName }, _mapper.Map<PhotoDto>(photo));
+            }
+
+            return BadRequest("Problem adding photo");
+        }
+
+        [HttpPut("set-photo-main")]
+        public async Task<ActionResult> SetMainPhoto(int photoId)
+        {
+            AppUser user = await _userRepository.GetByUserNameAsync(User.GetUserName());
+
+            Photo? photo = user.Photos?.FirstOrDefault(a => a.Id == photoId);
+
+            if (photo!.IsMain) return BadRequest("This is already your main photo");
+
+            Photo? currentMain = user.Photos?.FirstOrDefault(a => a.IsMain);
+            if (currentMain is not null) currentMain.IsMain = false;
+
+            photo.IsMain = true;
+
+            if (await _userRepository.SaveAllAsync()) return NoContent();
+
+            return BadRequest("Failed to set main photo");
+        }
     }
-} 
+}
